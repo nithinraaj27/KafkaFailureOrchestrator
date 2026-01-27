@@ -57,22 +57,22 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 │  │ Primary Topics  │          │  Failure Topic  │            │
 │  │ (application)   │          │   (failures)    │            │
 │  └────────┬────────┘          └────────▲────────┘            │
-│           │                            │                      │
-│           │ consumer error             │ publish failure      │
-│           └────────────────────────────┘                      │
+│           │                            │                     │
+│           │ consumer error             │ publish failure     │
+│           └────────────────────────────┘                     │
 └──────────────────────────────────────────────────────────────┘
                       │
                       ▼
 ┌──────────────────────────────────────────────────────────────┐
-│         Ingestion API (Go/Gin) :8080                          │
+│         Ingestion API (Go/Gin) :8080                         │
 │  ┌────────────────────────────────────────────────────────┐  │
 │  │ POST /failures           - Register failed event       │  │
-│  │ GET  /tools/failures/:id - Fetch context for MCP      │  │
-│  │ POST /tools/decisions    - Execute MCP decision       │  │
-│  │ GET  /health            - Health check                │  │
+│  │ GET  /tools/failures/:id - Fetch context for MCP       │  │
+│  │ POST /tools/decisions    - Execute MCP decision        │  │
+│  │ GET  /health            - Health check                 │  │
 │  └────────────────────────────────────────────────────────┘  │
-│        │                 │                 │                  │
-│        ▼                 ▼                 ▼                  │
+│        │                 │                 │                 │
+│        ▼                 ▼                 ▼                 │
 │   ┌─────────┐       ┌────────┐       ┌─────────┐             │
 │   │Postgres │       │ Kafka  │       │ Redis   │             │
 │   │   DB    │       │Producer│       │ Cache   │             │
@@ -81,7 +81,7 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
                       │
                       ▼
 ┌──────────────────────────────────────────────────────────────┐
-│      MCP Brain (Python/FastAPI) :8000                         │
+│      MCP Brain (Python/FastAPI) :8000                        │
 │  ┌────────────────────────────────────────────────────────┐  │
 │  │ Decision Engine (Claude AI)                            │  │
 │  │  • Analyze exception type                              │  │
