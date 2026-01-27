@@ -1,0 +1,127 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Create two listeners: INTERNAL (for Docker) and EXTERNAL (for your host)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: orchestrator
+      POSTGRES_PASSWORD: orchestrator
+      POSTGRES_DB: orchestrator_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestrator"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway:10
+    container_name: flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: migrate
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/orchestrator_db
+      FLYWAY_USER: orchestrator
+      FLYWAY_PASSWORD: orchestrator
+      FLYWAY_LOCATIONS: filesystem:/flyway/migrations 
+    volumes:
+      - ./flyway/sql:/flyway/migrations
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+  
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  ingestion-api:
+    build:
+      context: ./ingestion-api
+    container_name: ingestion-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      - DB_URL=postgres://orchestrator:orchestrator@postgres:5432/orchestrator_db?sslmode=disable
+      - KAFKA_BROKERS=kafka:29092
+      - BRAIN_URL=http://mcp-brain:8000
+
+  mcp-brain:
+    build:
+      context: ./mcp-brain
+    container_name: mcp-brain
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ingestion-api
+    environment:
+      - GO_API_URL=http://ingestion-api:8080
+
+  dashboard:
+    build:
+      context: ./mcp-brain
+    container_name: mcp-dashboard
+    volumes:
+      - ./mcp-brain:/app
+    working_dir: /app
+    # Using 'pip install' inside the command works, but we need to ensure it finishes
+    command: >
+      sh -c "pip install --no-cache-dir streamlit pandas sqlalchemy psycopg2-binary && 
+             streamlit run dashboard.py --server.address=0.0.0.0"
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=orchestrator_db
+      - DB_USER=orchestrator
+      - DB_PASSWORD=orchestrator
+      - DB_PORT=5432

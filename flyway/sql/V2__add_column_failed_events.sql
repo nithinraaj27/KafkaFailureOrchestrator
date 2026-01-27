@@ -1,0 +1,1 @@
+ALTER TABLE failed_events ADD COLUMN original_payload TEXT;
