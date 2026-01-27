@@ -1,4 +1,3 @@
-cat > /Users/nithinraaj/Documents/GoLang/KafkaFailureOrchestrator/README.md << 'EOF'
 # Kafka Failure Orchestrator
 
 A sophisticated AI-powered failure management system that intelligently orchestrates Kafka message failures using Claude AI, MCP (Model Context Protocol), and intelligent retry logic.
@@ -51,54 +50,53 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 
 ## 🏗️ Architecture
 
-\`\`\`
-┌─────────────────────────────────────────────────────────────────┐
-│                     Kafka Cluster                               │
-│  ┌──────────────────┐    ┌──────────────────┐                  │
-│  │ Primary Topics   │    │  Failure Topic   │                  │
-│  │  (application)   │    │  (failures)      │                  │
-│  └────────┬─────────┘    └────────▲─────────┘                  │
-│           │                       │                             │
-│           │ consumer error        │ publish failure             │
-│           └───────────────────────┘                             │
-└─────────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              Ingestion API (Go/Gin)  :8080                       │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ POST /failures          - Register failed event          │   │
-│  │ GET  /tools/failures/:id - Fetch context for MCP        │   │
-│  │ POST /tools/decisions   - Execute MCP decision          │   │
-│  │ GET  /health           - Health check                   │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                         │                                        │
-│      ┌──────────────────┼──────────────────┐                    │
-│      ▼                  ▼                  ▼                    │
-│  ┌────────┐        ┌────────┐        ┌────────┐                │
-│  │Postgres│        │ Kafka  │        │ Redis  │                │
-│  │  DB    │        │Producer│        │ Cache  │                │
-│  └────────┘        └────────┘        └────────┘                │
-└─────────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│           MCP Brain (Python/FastAPI)  :8000                      │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ Decision Engine (Claude AI)                              │   │
-│  │  • Analyze exception type                                │   │
-│  │  • Check retry count vs thresholds                       │   │
-│  │  • Apply business rules                                  │   │
-│  │  • Return RETRY/DLQ/PENDING decision                     │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Kafka Cluster                             │
+│  ┌─────────────────┐          ┌─────────────────┐            │
+│  │ Primary Topics  │          │  Failure Topic  │            │
+│  │ (application)   │          │   (failures)    │            │
+│  └────────┬────────┘          └────────▲────────┘            │
+│           │                            │                      │
+│           │ consumer error             │ publish failure      │
+│           └────────────────────────────┘                      │
+└──────────────────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│         Ingestion API (Go/Gin) :8080                          │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ POST /failures           - Register failed event       │  │
+│  │ GET  /tools/failures/:id - Fetch context for MCP      │  │
+│  │ POST /tools/decisions    - Execute MCP decision       │  │
+│  │ GET  /health            - Health check                │  │
+│  └────────────────────────────────────────────────────────┘  │
+│        │                 │                 │                  │
+│        ▼                 ▼                 ▼                  │
+│   ┌─────────┐       ┌────────┐       ┌─────────┐             │
+│   │Postgres │       │ Kafka  │       │ Redis   │             │
+│   │   DB    │       │Producer│       │ Cache   │             │
+│   └─────────┘       └────────┘       └─────────┘             │
+└──────────────────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│      MCP Brain (Python/FastAPI) :8000                         │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Decision Engine (Claude AI)                            │  │
+│  │  • Analyze exception type                              │  │
+│  │  • Check retry count vs thresholds                     │  │
+│  │  • Apply business rules                                │  │
+│  │  • Return RETRY/DLQ/PENDING decision                   │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+                      │
+                      ▼
          ┌───────────────────────────────┐
          │  Retry Topic / DLQ Topic      │
-         │  (for downstream processing)  │
+         │ (for downstream processing)   │
          └───────────────────────────────┘
-\`\`\`
+```
 
 ---
 
@@ -127,7 +125,7 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 
 ### Local Development
 
-\`\`\`bash
+```bash
 # 1. Clone and navigate to project
 cd /Users/nithinraaj/Documents/GoLang/KafkaFailureOrchestrator
 
@@ -143,16 +141,16 @@ docker-compose up -d
 
 # 5. Verify services are running
 docker-compose ps
-\`\`\`
+```
 
 ### Initial Setup
 
-\`\`\`bash
+```bash
 # 1. Wait for Postgres to be ready
 docker-compose exec postgres pg_isready -U orchestrator
 
 # 2. Run Flyway migrations (automatic via Docker Compose)
-docker-compose exec postgres psql -U orchestrator -d orchestrator_db -c "\\dt"
+docker-compose exec postgres psql -U orchestrator -d orchestrator_db -c "\dt"
 
 # 3. Verify Kafka is ready
 docker-compose exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
@@ -165,7 +163,7 @@ go run main.go
 # 5. Start the MCP Brain (in another terminal)
 cd mcp-brain
 python server.py
-\`\`\`
+```
 
 ---
 
@@ -174,7 +172,8 @@ python server.py
 ### Ingestion API (Port 8080)
 
 #### 1. Register Failed Event
-\`\`\`http
+
+```json
 POST /failures
 Content-Type: application/json
 
@@ -196,10 +195,11 @@ Response: 201 Created
   "status": "registered",
   "message": "Event saved to DB and published to Kafka"
 }
-\`\`\`
+```
 
 #### 2. Get Failure Context
-\`\`\`http
+
+```json
 GET /tools/failures/:eventId
 
 Response: 200 OK
@@ -219,10 +219,11 @@ Response: 200 OK
     }
   ]
 }
-\`\`\`
+```
 
 #### 3. Execute Decision
-\`\`\`http
+
+```json
 POST /tools/decisions
 Content-Type: application/json
 
@@ -239,10 +240,11 @@ Response: 200 OK
   "decision": "RETRY",
   "next_action": "message_republished_to_retry_topic"
 }
-\`\`\`
+```
 
 #### 4. Health Check
-\`\`\`http
+
+```json
 GET /health
 
 Response: 200 OK
@@ -250,12 +252,13 @@ Response: 200 OK
   "status": "ready",
   "mcp_enabled": true
 }
-\`\`\`
+```
 
 ### MCP Brain API (Port 8000)
 
 #### 1. Trigger Failure Analysis
-\`\`\`http
+
+```json
 POST /tools/handle_failure_event
 Content-Type: application/json
 
@@ -269,10 +272,11 @@ Response: 202 Accepted
   "message": "Brain is now analyzing evt_001 in the background.",
   "event_id": "evt_001"
 }
-\`\`\`
+```
 
 #### 2. Brain Health Check
-\`\`\`http
+
+```json
 GET /health
 
 Response: 200 OK
@@ -280,7 +284,7 @@ Response: 200 OK
   "status": "brain_active",
   "mcp_version": "1.0.0"
 }
-\`\`\`
+```
 
 ---
 
@@ -297,7 +301,8 @@ Response: 200 OK
 ### Topic Message Schema
 
 #### failed-events Topic
-\`\`\`json
+
+```json
 {
   "event_id": "evt_001",
   "topic": "orders",
@@ -310,10 +315,11 @@ Response: 200 OK
   "original_payload": "{...}",
   "timestamp": "2026-01-27T10:30:00Z"
 }
-\`\`\`
+```
 
 #### retry-events Topic
-\`\`\`json
+
+```json
 {
   "event_id": "evt_001",
   "original_payload": "{...}",
@@ -321,10 +327,11 @@ Response: 200 OK
   "backoff_ms": 5000,
   "scheduled_for": "2026-01-27T10:35:00Z"
 }
-\`\`\`
+```
 
 #### dlq-events Topic
-\`\`\`json
+
+```json
 {
   "event_id": "evt_001",
   "reason": "CRITICAL_LOGIC_ERROR: NullPointerException is a code bug",
@@ -332,7 +339,7 @@ Response: 200 OK
   "original_topic": "orders",
   "requires_developer_fix": true
 }
-\`\`\`
+```
 
 ---
 
@@ -341,7 +348,8 @@ Response: 200 OK
 ### PostgreSQL: orchestrator_db
 
 #### Table: failed_events
-\`\`\`sql
+
+```sql
 CREATE TABLE failed_events (
     event_id           VARCHAR(100) PRIMARY KEY,
     topic              VARCHAR(100) NOT NULL,
@@ -358,12 +366,13 @@ CREATE TABLE failed_events (
 
 CREATE INDEX idx_failed_events_status ON failed_events(status);
 CREATE INDEX idx_failed_events_exception ON failed_events(exception_type);
-\`\`\`
+```
 
 **Purpose**: Stores all failed event records with complete metadata
 
 #### Table: retry_history
-\`\`\`sql
+
+```sql
 CREATE TABLE retry_history (
     id SERIAL PRIMARY KEY,
     event_id VARCHAR(100) REFERENCES failed_events(event_id),
@@ -371,12 +380,13 @@ CREATE TABLE retry_history (
     retry_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     decision_source VARCHAR(50) NOT NULL
 );
-\`\`\`
+```
 
 **Purpose**: Audit trail of all retry attempts
 
 #### Table: decision_audit
-\`\`\`sql
+
+```sql
 CREATE TABLE decision_audit (
     id SERIAL PRIMARY KEY,
     event_id VARCHAR(100) REFERENCES failed_events(event_id),
@@ -384,7 +394,7 @@ CREATE TABLE decision_audit (
     reason TEXT,
     decided_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-\`\`\`
+```
 
 **Purpose**: Complete history of all decisions (RETRY/DLQ/PENDING)
 
@@ -395,7 +405,8 @@ CREATE TABLE decision_audit (
 ### Environment Variables
 
 #### Go API (.env or docker-compose.yml)
-\`\`\`bash
+
+```bash
 # Database
 DB_URL=postgres://orchestrator:orchestrator@postgres:5432/orchestrator_db?sslmode=disable
 
@@ -407,10 +418,11 @@ BRAIN_URL=http://mcp-brain:8000
 
 # Server Port
 PORT=8080
-\`\`\`
+```
 
 #### MCP Brain (.env or docker-compose.yml)
-\`\`\`bash
+
+```bash
 # Go API URL (Docker internal)
 GO_API_URL=http://ingestion-api:8080
 
@@ -419,7 +431,7 @@ MCP_PORT=8000
 
 # Claude AI (Optional)
 ANTHROPIC_API_KEY=your_key_here
-\`\`\`
+```
 
 ---
 
@@ -427,7 +439,7 @@ ANTHROPIC_API_KEY=your_key_here
 
 ### Docker Compose (Recommended)
 
-\`\`\`bash
+```bash
 # Start all services
 docker-compose up -d
 
@@ -440,7 +452,7 @@ docker-compose down
 
 # Clean slate (remove volumes)
 docker-compose down -v
-\`\`\`
+```
 
 ### Services in docker-compose.yml
 
@@ -459,18 +471,18 @@ docker-compose down -v
 
 ### View Logs
 
-\`\`\`bash
+```bash
 # Follow logs
 docker-compose logs -f ingestion-api
 docker-compose logs -f mcp-brain
 
 # View with timestamps
 docker-compose logs -f --timestamps ingestion-api
-\`\`\`
+```
 
 ### Database Queries
 
-\`\`\`bash
+```bash
 # Connect to Postgres
 docker-compose exec postgres psql -U orchestrator -d orchestrator_db
 
@@ -478,11 +490,11 @@ docker-compose exec postgres psql -U orchestrator -d orchestrator_db
 SELECT * FROM failed_events WHERE status = 'FAILED' LIMIT 10;
 SELECT * FROM decision_audit WHERE event_id = 'evt_001';
 SELECT exception_type, COUNT(*) as count FROM failed_events GROUP BY exception_type;
-\`\`\`
+```
 
 ### Kafka Monitoring
 
-\`\`\`bash
+```bash
 # List topics
 docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
 
@@ -491,10 +503,11 @@ docker-compose exec kafka kafka-topics.sh --describe --topic failed-events --boo
 
 # Consume messages
 docker-compose exec kafka kafka-console-consumer.sh --topic failed-events --from-beginning --max-messages 10 --bootstrap-server localhost:9092
-\`\`\`
+```
 
 #### Kafka UI Dashboard
 
+Access at `http://localhost:8085`
 
 ---
 
@@ -505,56 +518,61 @@ docker-compose exec kafka kafka-console-consumer.sh --topic failed-events --from
 The MCP Brain applies these rules **in order**:
 
 #### Rule 1: Max Retries Exceeded
-\`\`\`
+
+```
 IF retry_count >= 3:
   ✓ DECISION: DLQ
   ✓ REASON: "MAX_RETRIES_EXCEEDED: Already attempted N times. Quarantining."
-\`\`\`
+```
 
 #### Rule 2: Poison Pills (Logic Errors)
-\`\`\`
+
+```
 IF exception_type IN [NullPointerException, ValidationError, SyntaxError, IndexOutOfBoundsException]:
   ✓ DECISION: DLQ
   ✓ REASON: "CRITICAL_LOGIC_ERROR: {exception_type} is a code bug."
-\`\`\`
+```
 
 #### Rule 3: Transient Network Issues
-\`\`\`
+
+```
 IF exception_type IN [TimeoutException, ConnectionException, NetworkException, BrokerException]:
   ✓ DECISION: RETRY
   ✓ REASON: "TRANSIENT_FAILURE: {exception_type} detected. Attempting recovery."
-\`\`\`
+```
 
 #### Rule 4: Database Contention
-\`\`\`
+
+```
 IF "deadlock" IN error_message OR "database" IN exception_type:
   ✓ DECISION: RETRY
   ✓ REASON: "RESOURCE_CONTENTION: Database deadlock detected. Retrying with backoff."
-\`\`\`
+```
 
 #### Rule 5: Unknown Errors
-\`\`\`
+
+```
 ELSE:
   ✓ DECISION: PENDING
   ✓ REASON: "UNKNOWN_EXCEPTION: No rule for {exception_type}. Escalating for human review."
-\`\`\`
+```
 
 ### Retry Strategy - Exponential Backoff
 
-\`\`\`
+```
 Attempt 1: Immediate
 Attempt 2: Wait 1 second
 Attempt 3: Wait 4 seconds
 Attempt 4: Wait 9 seconds → Then DLQ
 
 Formula: delay = (attempt_number - 1)²
-\`\`\`
+```
 
 ---
 
 ## 🔄 Message Flow
 
-\`\`\`
+```
 1. Consumer Processing
    └─> Encounters Exception
        └─> Publishes to "failed-events" topic
@@ -581,7 +599,7 @@ Formula: delay = (attempt_number - 1)²
    └─> Retry Topic Consumer
        └─> Re-publishes to original topic
            └─> Full retry cycle
-\`\`\`
+```
 
 ---
 
@@ -589,10 +607,10 @@ Formula: delay = (attempt_number - 1)²
 
 ### Test a Failure Event
 
-\`\`\`bash
+```bash
 # Register a failure
-curl -X POST http://localhost:8080/failures \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:8080/failures \
+  -H "Content-Type: application/json" \
   -d '{
     "event_id": "evt_test_001",
     "topic": "orders",
@@ -608,81 +626,36 @@ curl -X POST http://localhost:8080/failures \\
 curl http://localhost:8080/tools/failures/evt_test_001
 
 # Check decision
-curl -X POST http://localhost:8080/tools/decisions \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:8080/tools/decisions \
+  -H "Content-Type: application/json" \
   -d '{
     "event_id": "evt_test_001",
     "decision": "RETRY",
     "reason": "Test retry"
   }'
-\`\`\`
+```
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### Port Already in Use
-\`\`\`bash
+
+```bash
 lsof -i :8080
 kill -9 <PID>
-\`\`\`
+```
 
 ### Postgres Connection Failed
-\`\`\`bash
+
+```bash
 docker-compose restart postgres
 docker-compose logs postgres
-\`\`\`
+```
 
 ### Go Packages Not Found
-\`\`\`bash
+
+```bash
 cd ingestion-api
 go mod download
-go mod tidy
-\`\`\`
-
-### Python Virtual Environment Issues
-\`\`\`bash
-source .venv/bin/activate
-pip install --upgrade pip
-pip install mcp requests fastapi uvicorn
-\`\`\`
-
----
-
-## 📈 Performance Targets
-
-| Metric | Target |
-|--------|--------|
-| Failure Ingestion Rate | 10K msgs/sec |
-| Decision Latency | <500ms |
-| DB Write Latency | <50ms |
-| Kafka Publish Latency | <100ms |
-
----
-
-## 🤝 Contributing
-
-\`\`\`bash
-# Feature branch
-git checkout -b feature/your-feature
-
-# Make changes & test
-docker-compose down -v && docker-compose up -d
-
-# Commit
-git add .
-git commit -m "feat: description"
-git push origin feature/your-feature
-\`\`\`
-
-------
-
-## 👤 Author
-
-**Nithinraaj J**
-
----
-
-**Last Updated**: January 27, 2026
-**Project Status**: Development Completed
-EOF
+go mod
