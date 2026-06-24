@@ -153,16 +153,17 @@ docker-compose exec postgres pg_isready -U orchestrator
 docker-compose exec postgres psql -U orchestrator -d orchestrator_db -c "\dt"
 
 # 3. Verify Kafka is ready
-docker-compose exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+docker-compose exec kafka bash -lc 'kafka-topics --bootstrap-server localhost:9092 --list'
 
-# 4. Start the Go API
-cd ingestion-api
-go mod download
-go run main.go
-
-# 5. Start the MCP Brain (in another terminal)
-cd mcp-brain
-python server.py
+# 4. Run the app components only if you are not using the Compose services
+#    (the compose file already starts ingestion-api and mcp-brain).
+#    To run them locally, stop the matching containers first, then:
+# cd ingestion-api
+# go mod download
+# go run main.go
+#
+# cd mcp-brain
+# python server.py
 ```
 
 ---
