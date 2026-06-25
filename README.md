@@ -126,7 +126,7 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 
 ```bash
 # 1. Clone and navigate to project
-cd /Users/nithinraaj/Documents/GoLang/KafkaFailureOrchestrator
+cd /Users/nithinraaj/Documents/Projects/GoLang/KafkaFailureOrchestrator
 
 # 2. Create Python virtual environment
 python3 -m venv .venv
@@ -136,7 +136,7 @@ source .venv/bin/activate
 pip install mcp requests fastapi uvicorn
 
 # 4. Start all services with Docker Compose
-docker-compose up -d
+docker-compose up -d --build
 
 # 5. Verify services are running
 docker-compose ps
@@ -235,10 +235,8 @@ Content-Type: application/json
 
 Response: 200 OK
 {
-  "status": "decision_executed",
-  "event_id": "evt_001",
-  "decision": "RETRY",
-  "next_action": "message_republished_to_retry_topic"
+  "status": "Decision recorded and action triggered",
+  "action": "RETRY"
 }
 ```
 
@@ -294,13 +292,13 @@ Response: 200 OK
 
 | Topic Name | Partitions | Replication | Purpose |
 |-----------|-----------|-------------|---------|
-| **failed-events** | 3+ | 1+ | Primary failure ingestion topic |
-| **retry-events** | 3+ | 1+ | Retry queue for transient failures |
-| **dlq-events** | 3+ | 1+ | Dead Letter Queue for poison pills |
+| **failed-events-topic** | 3+ | 1+ | Primary failure ingestion topic |
+| **retry-events-topic** | 3+ | 1+ | Retry queue for transient failures |
+| **failed-events-dlq** | 3+ | 1+ | Dead Letter Queue for poison pills |
 
 ### Topic Message Schema
 
-#### failed-events Topic
+#### failed-events-topic
 
 ```json
 {
@@ -317,7 +315,7 @@ Response: 200 OK
 }
 ```
 
-#### retry-events Topic
+#### retry-events-topic
 
 ```json
 {
@@ -329,7 +327,7 @@ Response: 200 OK
 }
 ```
 
-#### dlq-events Topic
+#### failed-events-dlq
 
 ```json
 {
@@ -498,10 +496,10 @@ SELECT exception_type, COUNT(*) as count FROM failed_events GROUP BY exception_t
 docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
 
 # Describe topic
-docker-compose exec kafka kafka-topics.sh --describe --topic failed-events --bootstrap-server localhost:9092
+docker-compose exec kafka kafka-topics.sh --describe --topic failed-events-topic --bootstrap-server localhost:9092
 
 # Consume messages
-docker-compose exec kafka kafka-console-consumer.sh --topic failed-events --from-beginning --max-messages 10 --bootstrap-server localhost:9092
+docker-compose exec kafka kafka-console-consumer.sh --topic failed-events-topic --from-beginning --max-messages 10 --bootstrap-server localhost:9092
 ```
 
 #### Kafka UI Dashboard
@@ -556,15 +554,13 @@ ELSE:
   ✓ REASON: "UNKNOWN_EXCEPTION: No rule for {exception_type}. Escalating for human review."
 ```
 
-### Retry Strategy - Exponential Backoff
+### Retry Strategy - Current Behavior
 
 ```
-Attempt 1: Immediate
-Attempt 2: Wait 1 second
-Attempt 3: Wait 4 seconds
-Attempt 4: Wait 9 seconds → Then DLQ
-
-Formula: delay = (attempt_number - 1)²
+Attempt 1: Brain returns RETRY
+Attempt 2: Go logs retry history and publishes to retry-events-topic
+Attempt 3: Healer consumes retry event and marks the failure RESOLVED
+Attempt 4: If the brain decides DLQ, Go publishes to failed-events-dlq and marks QUARANTINED
 ```
 
 ---
@@ -574,7 +570,7 @@ Formula: delay = (attempt_number - 1)²
 ```
 1. Consumer Processing
    └─> Encounters Exception
-       └─> Publishes to "failed-events" topic
+       └─> Publishes to "failed-events-topic"
 
 2. Ingestion API
    └─> POST /failures
@@ -590,14 +586,14 @@ Formula: delay = (attempt_number - 1)²
 
 4. Executor (Go API)
    └─> Processes Decision
-       └─> DLQ: Send to dlq-events topic
-       └─> RETRY: Send to retry-events topic
+       └─> DLQ: Send to failed-events-dlq
+       └─> RETRY: Send to retry-events-topic
        └─> PENDING: Mark for human review
 
 5. Recovery
    └─> Retry Topic Consumer
-       └─> Re-publishes to original topic
-           └─> Full retry cycle
+       └─> Marks the failure RESOLVED after the retry event is consumed
+           └─> Current implementation simulates recovery rather than republishing to the original topic
 ```
 
 ---
@@ -618,7 +614,8 @@ curl -X POST http://localhost:8080/failures \
     "consumer_name": "test-consumer",
     "exception_type": "TimeoutException",
     "error_message": "Connection timeout after 30s",
-    "status": "FAILED"
+    "status": "FAILED",
+    "original_payload": "{}"
   }'
 
 # Get failure context
@@ -657,4 +654,5 @@ docker-compose logs postgres
 ```bash
 cd ingestion-api
 go mod download
-go mod
+go run main.go
+```
