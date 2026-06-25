@@ -74,9 +74,9 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 │        │                 │                 │                 │
 │        ▼                 ▼                 ▼                 │
 │   ┌─────────┐       ┌────────┐       ┌─────────┐             │
-│   │Postgres │       │ Kafka  │       │ Redis   │             │
-│   │   DB    │       │Producer│       │ Cache   │             │
-│   └─────────┘       └────────┘       └─────────┘             │
+│   │Postgres │       │ Kafka  │                            │
+│   │   DB    │       │Producer│                            │
+│   └─────────┘       └────────┘                            │
 └──────────────────────────────────────────────────────────────┘
                       │
                       ▼
@@ -108,7 +108,6 @@ Kafka Failure Orchestrator is an enterprise-grade system designed to **intellige
 | **AI Decision Engine** | Python (FastAPI + MCP) | 3.11+ |
 | **Message Queue** | Apache Kafka | 7.5.0 |
 | **Database** | PostgreSQL | 15 |
-| **Cache** | Redis | 7 |
 | **Migrations** | Flyway | 10 |
 | **Monitoring** | Kafka UI | latest |
 
@@ -461,7 +460,6 @@ docker-compose down -v
 - **Kafka** (9092): Message broker
 - **PostgreSQL** (5433): Main database
 - **Flyway**: Database migrations
-- **Redis** (6379): Caching layer
 - **Kafka UI** (8085): Kafka monitoring dashboard
 - **Ingestion API** (8080): Go service
 - **MCP Brain** (8000): Python decision engine

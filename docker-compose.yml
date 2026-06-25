@@ -61,12 +61,6 @@ services:
     volumes:
       - ./flyway/sql:/flyway/migrations
 
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "6379:6379"
-  
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
